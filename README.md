@@ -16,6 +16,9 @@ Just run **main.py** and follow the instructions! You will obtain the result wit
 
 We have also prepared some images for testing in the **examples** folder. They are collected from the original paper and from the Internet. Please issue me to remove them  in the case of copyright infringement.
 
+## Example
+
+Original artwork created by lofter 狄里.
 ![image](http://tiebapic.baidu.com/tieba/pic/item/96dda144ad34598283ca284a49f431adcaef84a2.jpg?tbpicau=2022-06-11-00_5784c3781ae68879515fa0c8efe2e48b)
 
 ## Reference
