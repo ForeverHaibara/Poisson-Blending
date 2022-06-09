@@ -7,8 +7,8 @@ import os
 class app():
     def __init__(self):
         self.app  = Tk()
-        self.w    = 700
-        self.h    = 580
+        self.w    = 1100
+        self.h    = 650
         self.step = 1
         self.path = os.path.dirname(__file__)
         
@@ -17,15 +17,23 @@ class app():
         w   = self.w 
         h   = self.h
 
+
+        app.title("Poisson Image Editting")
+        app.resizable(width = False, height = False)
+        #app.bind('<Configure>', self.windowresize)
+        
+        self.canvas = Canvas(app, width = w, height = h, bg = "white")
+        self.initcanvas()
+  
+    def initcanvas(self):
+        # widget configuration
+        app = self.app
+        w   = self.w 
+        h   = self.h
+
         # size of the image box
         w2  = w * 5 / 7
         h2  = h - 150
-
-        app.title("Poisson Image Editting")
-        
-        self.canvas = Canvas(app, width = w, height = h, bg = "white")
-
-
 
         self.imgs = [0] * 7
         self.tkimgs = [0] * 7
@@ -36,12 +44,12 @@ class app():
         self.foreground_coor = (0, 0)
         self.foreground_resize = (1, 1)
         
-        self.imgs[1] = Image.open(self.path + '\\examples\\texture_foreground.png')
+        self.imgs[1] = Image.open(self.path + '\\examples\\rainbow_foreground.png')
         self.imgs[1], self.resize[1] = ResizeKeepAspectRatio(self.imgs[1], w2 * .99, h2 * .99)
         self.tkimgs[1] = ImageTk.PhotoImage(self.imgs[1])
         self.refreshforeground()
     
-        self.imgs[3] = Image.open(self.path + '\\examples\\texture_background.png')
+        self.imgs[3] = Image.open(self.path + '\\examples\\rainbow_background.png')
         self.imgs[3], self.resize[3] = ResizeKeepAspectRatio(self.imgs[3], w2 * .99, h2 * .99)
         self.tkimgs[3] = ImageTk.PhotoImage(self.imgs[3])
 
@@ -88,7 +96,7 @@ class app():
         instructions = (0,'Upload a foreground file.',
                        'Outline the target by circling.',
                        'Upload a background file.',
-                       'Place your target on the background. (Drag and scroll!)',
+                       'Drag and scroll your target.',
                        'Save your result.')
         canvas.create_text(w/2, 40, text = 'Step %d'%self.step, 
                                 font = ('Times New Roman',30), tag = 'instruction1')
@@ -110,6 +118,14 @@ class app():
             self.canvas.create_image(w/2 + self.foreground_coor[0], 
                                     h/2 + 25 + self.foreground_coor[1], 
                                     image = self.tkforeground, tag = 'img0')
+
+
+    # def windowresize(self, event = None):
+    #     self.w, self.h = self.app.maxsize()
+    #     self.canvas.destroy()
+        
+    #     self.canvas = Canvas(self.app, width = self.w, height = self.h, bg = "white")
+    #     self.initcanvas()
 
 
     def trydelete(self, x):

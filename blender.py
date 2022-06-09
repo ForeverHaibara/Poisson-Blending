@@ -2,6 +2,15 @@ import numpy as np
 from scipy import sparse 
 #from scipy.sparse.linalg import cg
 from solver import ConjugateGradient as cg
+try:
+    from numba import jit
+    USE_JIT = True
+    print('Numba acceleration enabled.')
+except:
+    USE_JIT = False
+    print('Numba is not installed. Install Numba to speed up your experience.')
+
+
 
 def CenterConv(A, a = 4, b = -1):
     '''
@@ -19,6 +28,7 @@ def CenterConv(A, a = 4, b = -1):
     return B
     
 
+
 def GuidanceField(bg, fg, gradient = 'mixed'):
     assert gradient in ('foreground', 'mixed'), 'Unsupported choice of gradient field.'
     if gradient == 'foreground':
@@ -35,6 +45,61 @@ def GuidanceField(bg, fg, gradient = 'mixed'):
         nabla[1:-1,1:-1] += dominate(bg[1:-1,1:-1] - bg[1:-1,2:  ], fg[1:-1,1:-1] - fg[1:-1,2:  ])
         
     return nabla
+
+
+
+def CountIndices(mask, boundary, indices):
+    '''Index each pixel in the region.'''
+    s = 0 # counter
+    for i in range(1, mask.shape[0] - 1):
+        for j in range(1, mask.shape[1] - 1):
+            if mask[i,j] and not boundary[i,j]: # white: in the region
+                indices[i,j] = s 
+                s += 1
+    return s
+if USE_JIT:
+    CountIndices = jit(CountIndices)
+
+
+
+def ConstructSystem(bg, nabla, mask, boundary, indices, csr_x, csr_y, csr_data, aim, t):
+    '''Construct the Poisson linear system.
+    Note that the input ndarrays here are all references (pointers).'''   
+    s = 0 # reset counter
+    for i in range(1, mask.shape[0] - 1):
+        for j in range(1, mask.shape[1] - 1):
+            if mask[i,j] and not boundary[i,j]: # white: in the region
+                # row s of the linear system 
+                aim[s] = nabla[i,j]
+                for d in ((-1,0), (1,0), (0,-1), (0,1)):
+                    u, v = i + d[0], j + d[1]
+                    csr_data[s] = 4
+                    if mask[u,v]:
+                        if boundary[u,v]: # known values are on the right hand side
+                            aim[s] += bg[u,v] 
+                        else: # add csr entries
+                            csr_x[t] = s 
+                            csr_y[t] = indices[u,v]
+                            csr_data[t] = -1
+                            t += 1
+                s += 1
+    return t
+if USE_JIT:
+    ConstructSystem = jit(ConstructSystem)
+
+
+
+def RenderResult(background, mask, boundary, channel, x, y, sol):
+    '''Render the solution to the background image.'''
+    s = 0 # reset counter
+    for i in range(1, mask.shape[0] - 1):
+        for j in range(1, mask.shape[1] - 1):
+            if mask[i,j] and not boundary[i,j]: # white: in the region
+                background[x+i-1,y+j-1,channel] = sol[s]
+                s += 1
+if USE_JIT:
+    RenderResult = jit(RenderResult)
+
 
 
 def PoissonBlending(background, foreground, mask, x, y, gradient = 'mixed', dtype = 'int'):
@@ -64,6 +129,10 @@ def PoissonBlending(background, foreground, mask, x, y, gradient = 'mixed', dtyp
     # boundaries of the region are pixels with 1~3 neighbors
     boundary = np.where(np.abs(neighbors - 2) < 2, 1, 0)
 
+    # index each pixel in the region
+    indices = np.zeros(mask.shape, dtype='int32')
+    s = CountIndices(mask, boundary, indices)  # number of pixels in the region
+
     for channel in range(3): 
         # solve the Poisson equation channel-wise
         bg = background[x: x + mask.shape[0] - 2, y: y + mask.shape[1] - 2, channel]
@@ -75,53 +144,29 @@ def PoissonBlending(background, foreground, mask, x, y, gradient = 'mixed', dtyp
         # compute the guidance field
         nabla = GuidanceField(bg, fg, gradient)
 
-        # index each pixel in the region
-        indices = np.zeros(mask.shape, dtype='int32')
-        s = 0 # counter
-        for i in range(1, mask.shape[0] - 1):
-            for j in range(1, mask.shape[1] - 1):
-                if mask[i,j] and not boundary[i,j]: # white: in the region
-                    indices[i,j] = s 
-                    s += 1
-
         # construct the sparse linear system with size  s x s
         # diagonal entry
-        csr_x    = [i for i in range(s)]
-        csr_y    = [i for i in range(s)]
-        csr_data = [0 for i in range(s)]
-        aim      = [0 for i in range(s)]
+        t = 5 * s  # upper bound for nonzero entries
+        csr_x    = np.arange(t, dtype = 'int32')
+        csr_y    = np.arange(t, dtype = 'int32')
+        csr_data = np.zeros(t, dtype = 'float64')
+        aim      = np.zeros(s, dtype = 'float64')
+        
+        # construct the sparse linear system with size  s x s
+        # the arrays csr_x, csr_y, csr_data, aim get modified in this function
+        t = ConstructSystem(bg, nabla, mask, boundary, indices, csr_x, csr_y, csr_data, aim, s)
 
-        s = 0 # reset counter
-        for i in range(1, mask.shape[0] - 1):
-            for j in range(1, mask.shape[1] - 1):
-                if mask[i,j] and not boundary[i,j]: # white: in the region
-                    # row s of the linear system 
-                    aim[s] = nabla[i,j]
-                    for d in ((-1,0), (1,0), (0,-1), (0,1)):
-                        u, v = i + d[0], j + d[1]
-                        csr_data[s] = 4
-                        if mask[u,v]:
-                            if boundary[u,v]: # known values are on the right hand side
-                                aim[s] += bg[u,v] 
-                            else: # add csr entries
-                                csr_x.append(s) 
-                                csr_y.append(indices[u,v])
-                                csr_data.append(-1)
-                    s += 1
-                                
-        csr = sparse.csr_matrix((csr_data, (csr_x, csr_y)), shape = (s,s))
-        aim = np.array(aim)
+        csr_x = csr_x[:t]
+        csr_y = csr_y[:t]
+        csr_data = csr_data[:t]
+
+        csr = sparse.csr_matrix((csr_data, (csr_x, csr_y)), shape = (s,s), dtype = 'float64')
 
         # solve the equation "csr * x = aim"
         sol = cg(csr, aim, tol = 1e-5, maxiter = 200)
         # sol = sol[0]    # need this line when using scipy.sparse.linalg.cg
 
-        s = 0 # reset counter
-        for i in range(1, mask.shape[0] - 1):
-            for j in range(1, mask.shape[1] - 1):
-                if mask[i,j] and not boundary[i,j]: # white: in the region
-                    background[x+i-1,y+j-1,channel] = sol[s]
-                    s += 1
+        RenderResult(background, mask, boundary, channel, x, y, sol)
 
     # from matplotlib import pyplot as plt 
     # plt.imshow(background)
@@ -131,7 +176,6 @@ def PoissonBlending(background, foreground, mask, x, y, gradient = 'mixed', dtyp
     elif dtype == 'float':
         background = background.cilp(0,1)
     return background
-
 
 
 
