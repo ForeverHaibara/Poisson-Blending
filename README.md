@@ -4,8 +4,9 @@ A python implementation of Poisson Blending with friendly user interface.
 ## Dependencies 
 1. **numpy**
 2. **scipy**
-3. **tkinter** == 8.6
-4. **numba** (optional but recommended)
+3. **PIL**
+4. **tkinter** == 8.6
+5. **numba** (optional but recommended)
 
 If **numba** is installed, the program will be twice faster. Don't be afraid, it won't be long -- the problem gets solved within seconds. 
 
