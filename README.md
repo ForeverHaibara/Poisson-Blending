@@ -13,7 +13,7 @@ If **numba** is installed, the program will be twice faster. Don't be afraid, it
 
 Just run **main.py** and follow the instructions! You will obtain the result within $5$ steps! (Upload the foreground, crop out the target, upload the background, place the target onto the background and finally save the result.)
 
-We have also prepared some images for testing in the **example** folder. They are collected from the original paper and from the Internet. Please issue me to delete in the case of copyright infringement.
+We have also prepared some images for testing in the **examples** folder. They are collected from the original paper and from the Internet. Please issue me to delete in the case of copyright infringement.
 
 ## Reference
 
