@@ -19,7 +19,10 @@ We have also prepared some images for testing in the **examples** folder. They a
 ## Example
 
 Original artwork created by lofter 狄里.
+![image](https://raw.githubusercontent.com/ForeverHaibara/Poisson-Blending/main/2022年6月9日8.png)
+<!---
 ![image](http://tiebapic.baidu.com/tieba/pic/item/96dda144ad34598283ca284a49f431adcaef84a2.jpg?tbpicau=2022-06-11-00_5784c3781ae68879515fa0c8efe2e48b)
+-->
 
 ## Reference
 
