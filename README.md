@@ -18,7 +18,7 @@ We have also prepared some images for testing in the **examples** folder. They a
 
 ## Example
 
-Original artwork created by lofter 狄里.
+Original artwork created by lofter 小若.
 <!---
 ![image](https://raw.githubusercontent.com/ForeverHaibara/Poisson-Blending/main/2022年6月9日8.png)
 -->
