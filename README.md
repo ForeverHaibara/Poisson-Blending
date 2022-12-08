@@ -23,7 +23,7 @@ Original artwork created by lofter 小若.
 ![image](https://raw.githubusercontent.com/ForeverHaibara/Poisson-Blending/main/2022年6月9日8.png)
 -->
 
-![image](https://tiebapic.baidu.com/forum/pic/item/d122dd39b6003af30bfa11b8702ac65c1238b69c.jpg?tbpicau=2022-06-13-05_04db151f0d02d810ae4204cfc5c7df63)
+![image](https://github.com/ForeverHaibara/Poisson-Blending/blob/main/examples/display.png?raw=true)
 
 
 ## Reference
